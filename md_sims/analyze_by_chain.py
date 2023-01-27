@@ -5,8 +5,8 @@
 
 import glob
 import json
-import numpy
 import os
+import numpy
 
 gmxbin = 'srun gmx'
 
@@ -17,7 +17,7 @@ def analyze_one(basename):
   """
   os.system('rm test*ndx')
   rmsd = []
-  for chain_idx in range(3):  
+  for chain_idx in range(3):
     os.system('%s select -s %s -on test%d '
               '-select "molindex %d; molindex %d and name CA"'
               % (gmxbin, basename, chain_idx, chain_idx+1, chain_idx+1))
@@ -27,7 +27,7 @@ def analyze_one(basename):
               % ('1 1', gmxbin, basename, basename, chain_idx, basename, chain_idx))
     tmpdat = numpy.loadtxt('%s_rmsd_%d.xvg' % (basename, chain_idx),
                            comments=['#','@'])
-    if len(rmsd):
+    if rmsd:
       rmsd[:, 1] += tmpdat[:, 1]**2
     else:
       rmsd = tmpdat**2
@@ -38,6 +38,5 @@ if __name__ == '__main__':
   for xtcfile in glob.glob('*prod.xtc'):
     keyname = xtcfile[:-4]
     rmsd_dict[keyname] = analyze_one(keyname).tolist()
-  outfile = open('rmsd_vals.json', 'w')
-  json.dump(rmsd_dict, outfile)
-  outfile.close()
+  with open('rmsd_vals.json', 'w') as outfile:
+    json.dump(rmsd_dict, outfile)
