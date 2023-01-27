@@ -1,7 +1,14 @@
+#! python
+#
+#  Code 2023 by Jamel Simpson
+
+from os import system
+from os.path import basename
+from Bio import Entrez
+
 def accession_to_fasta(monomer_file_name, accession, email_for_Bio,subunits, multimer_name='NA'):
     """Takes an accession number and creates a fasta file with the sequence that corresponds with the accession given.
     A monomeric file is always created by default for alignment purposes even if a multimer file is requested"""
-    from Bio import Entrez
     Entrez.email = email_for_Bio
     # Pulling the sequence corresponding with accession numer specified
     handle = Entrez.efetch(db='protein', id=accession, retmode='text', rettype='fasta').readlines()
@@ -16,7 +23,6 @@ def accession_to_fasta(monomer_file_name, accession, email_for_Bio,subunits, mul
 def multiple_sequence_alignment(list_of_fastas, fasta_for_alignment, new_alignment_file, reference_protein_fasta):
     """Creates a multiple sequence alignment using muscle and a concatenated fasta file with a reference fasta as the base,
      joined with all fastas specified in list_of_fastas."""
-    from os import system
     # Creating a copy of the fasta file of a reference_protein_fasta to be added into
     system(f'cp  {reference_protein_fasta} {fasta_for_alignment}')
     # Concatenating the fasta files found in list_of_fasta
@@ -60,16 +66,15 @@ def alignment_finder(alignment_file, sequence_of_interest,comparison_protein,ref
 
 def run_emboss_needle(new_emboss_file, sequence_one, sequence_two,needle_directory):
     """This runs EMBOSS on the command line."""
-    from os import system as syst
-    syst(f'{needle_directory} -sprotein -gapopen 10 -gapextend 0.5 -outfile {new_emboss_file} '
-         f'-asequence asis:{sequence_one} -bsequence asis:{sequence_two}')
+    system(f'{needle_directory} -sprotein -gapopen 10 -gapextend 0.5 -outfile {new_emboss_file} '
+           f'-asequence asis:{sequence_one} -bsequence asis:{sequence_two}')
 
 
 def fasta_creation(file_name, sequence, subunits):
     """Creates a fasta file with the given file_name, and replicates the sequence within it the specified number of times
     to create a homo multimer if subunits is greater than 1."""
-    from os.path import basename
     file = open(file_name, 'w')
     for x in range(subunits):
         file.write('>{0}\n{1}\n'.format(basename(file_name).replace('.fasta', ''),sequence))
     file.close()
+
