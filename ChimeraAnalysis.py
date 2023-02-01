@@ -2,21 +2,24 @@
 #
 # Code 2023 by Jamel Simpson
 
-from numpy import savetxt,empty,delete
-import Analysis
-from AccessiontoAlignment import alignment_finder
-from sys import argv
-from json import load
-from pathlib import Path
-
 """ This script is made for the analysis of chimeric proteins between one designated protein called a reference protein,
 and a designated section within the reference protein sequence, called sequence_of_interest being replaced by homologous sequences outlined in a list
 accession number sequences in a protein_info file"""
+
+from sys import argv
+from json import load
+from pathlib import Path
+from numpy import savetxt, empty, delete
+import Analysis
+from AccessiontoAlignment import alignment_finder
+
+
+
 # 3 command line inputs are required for the analysis script, similarly to the production.script, a .tsv file with accession numbers in column one
 # and the corresponding name you want associated with that sequence, these name will be used throughout all naming
 # including:fasta file names, alphafold out folders, in file fasta identifiers, plddt data files and so on
 # DO NOT INCLUDE YOUR REFERENCE PROTEIN IN THIS FILE
-protein_info=argv[1]
+protein_info = argv[1]
 # The second is a analysis_arguments.json file modified to your liking, this file has naming conventions for all important
 # files generated like plddt files, emboss files and the output file containing the tables of data associated with your
 # chimeras, keep naming conventions consistent from chimera_arguments.json for the basename of outputs, the naming works by replacing the
@@ -28,24 +31,24 @@ protein_info=argv[1]
 # preventing certain data columns from your final output like [["","Protein"],["","Sequence Similarity (%)"],["#","Overall Native Score"],["","Overall Chimera Score"],["","Relative Stability"]]
 # which would delete Overall Native Score and data
 # PROVIDE YOUR REFERENCE IN THE JSON INPUT FILE
-argument_json=str(argv[2])
+argument_json = str(argv[2])
 # Lastly and most simply, create a fasta file with the sequence that you want spliced out and replaced of your reference protein
-sequence_of_interest_fasta=argv[3]
+sequence_of_interest_fasta = argv[3]
 # These lines are extracting all the inputs and info outlined in the previous comments
 with open(sequence_of_interest_fasta, 'r') as fasta:
-    sequence_of_interest=''.join([x for x in fasta if x[0] != '>' if x != '']).strip().replace('\n', '')
+    sequence_of_interest = ''.join([x for x in fasta if x[0] != '>' if x != '']).strip().replace('\n', '')
 with open(protein_info, 'r') as info_list:
-    info_list=info_list.readlines()
+    info_list = info_list.readlines()
     protein_list = [x.split()[-1] for x in info_list]
 with open(argument_json, 'rb') as jfile:
-    argument_dict=load(jfile)["arguments"]
+    argument_dict = load(jfile)["arguments"]
 # Here, important information from your command line inputs are turned into list iterables to be used in the map function later
-character_to_replace=argument_dict['character_to_replace']
-sequence_of_interest=[sequence_of_interest for x in protein_list]
-msa_file=[argument_dict['msa_file_name'] for protein in protein_list]
+character_to_replace = argument_dict['character_to_replace']
+sequence_of_interest = [sequence_of_interest for x in protein_list]
+msa_file = [argument_dict['msa_file_name'] for protein in protein_list]
 native_plddts = [argument_dict['native_plddt'][1].replace(character_to_replace,protein) for protein in protein_list]
-chimera_plddt=[argument_dict['chimera_plddt'].replace(character_to_replace,protein) for protein in protein_list]
-plddt_files= native_plddts+chimera_plddt
+chimera_plddt = [argument_dict['chimera_plddt'].replace(character_to_replace,protein) for protein in protein_list]
+plddt_files = native_plddts+chimera_plddt
 number_of_subunits=[argument_dict['number_of_subunits'] for x in plddt_files]
 reference_protein_name=[argument_dict['reference_protein_name'] for x in protein_list]
 emboss_files=[argument_dict['emboss_names'][1].replace(character_to_replace,protein) for protein in protein_list]
@@ -96,16 +99,22 @@ overall_chimera_stability = list(map(Analysis.overall_confidence, chimera_plddt)
 # the top will not be included in the array
 # DATA RECORDED OUTSIDE OF THESE FIVE OBJECTS IS NOT CUSTOMIZABLE NO MATTER THE JSON FILE ARGUMENTS, THEY CAN BE TURNED ON AND OFF
 # BUT NOT SWITCHED WITHOUT PERSONAL EDITING OF THIS CODE
-data_array=empty((len(protein_list) + 1, 5), dtype=object)
-column_names=[x[1] for x in argument_dict['analysis_column_names']]
-preferred_columns=[x[0] for x in argument_dict['analysis_column_names']]
+data_array = empty((len(protein_list) + 1, 5), dtype=object)
+column_names = [x[1] for x in argument_dict['analysis_column_names']]
+preferred_columns = [x[0] for x in argument_dict['analysis_column_names']]
 # If a # is indicated in front of the emboss_names it will be excluded from the data output file
-if argument_dict['emboss_names'][0]=='': sequence_similarity=list(map(Analysis.get_sequence_similarity, emboss_files))
-else: sequence_similarity=['' for x in protein_list]; preferred_columns[1]='#'
-types_of_data=[protein_list, sequence_similarity, overall_stability, overall_chimera_stability, average_relative_stability]
-column_count=0
+if argument_dict['emboss_names'][0] == '':
+    sequence_similarity=list(map(Analysis.get_sequence_similarity, emboss_files))
+else:
+    sequence_similarity = ['' for x in protein_list]
+    preferred_columns[1] = '#'
+types_of_data = [protein_list, sequence_similarity, overall_stability, overall_chimera_stability, average_relative_stability]
+column_count = 0
 # Column names with # in front are excluded from the final array, otherwise the name and accompanying data are recorded into the array
-for name,corresponding_data,preferred in zip(column_names,types_of_data,preferred_columns):
-    if preferred=='': data_array[0,column_count], data_array[1:, column_count]= name,corresponding_data ; column_count+=1
-    else: data_array=delete(data_array,-1,1)
+for name, corresponding_data, preferred in zip(column_names, types_of_data, preferred_columns):
+    if preferred=='':
+        data_array[0, column_count], data_array[1:, column_count] = name, corresponding_data
+        column_count+=1
+    else:
+        data_array=delete(data_array, -1, 1)
 savetxt(argument_dict['analysis_output_csv'], data_array, fmt=','.join('%s' for x in preferred_columns if x==''), delimiter=",")

@@ -77,7 +77,6 @@ def alignment_finder(alignment_file, sequence_of_interest, comparison_protein,
 def fasta_creation(file_name, sequence, subunits):
     """Creates a fasta file with the given file_name, and replicates the sequence within it the specified number of times
     to create a homo multimer if subunits is greater than 1."""
-    file = open(file_name, 'w')
-    for x in range(subunits):
-        file.write('>{0}\n{1}\n'.format(Path(file_name).stem, sequence))
-    file.close()
+    with open(file_name, 'w') as outfile:
+        for _unused_x in range(subunits):
+          outfile.write('>{0}\n{1}\n'.format(Path(file_name).stem, sequence))
