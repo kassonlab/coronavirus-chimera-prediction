@@ -13,8 +13,8 @@ def sequence_splice(fasta_file, boundary_tuple, python_index='Yes'):
     if python_index == 'No':
         boundary_two = boundary_tuple[1] - 1
         boundary_one = boundary_tuple[0] - 1
-    fasta = open(fasta_file, "r")
-    sequence = ''.join([x for x in fasta if x[0] != '>' if x != '']).strip().replace('\n', '')
+    with open(fasta_file, "r") as fasta:
+        sequence = ''.join([x for x in fasta if x[0] != '>' if x != '']).strip().replace('\n', '')
     # The spliced region between the 2 specified boundaries is the first sequence
     # in the list followed by the sequence with the spliced region replace by a '-'
     spliced_region = ''.join(sequence[boundary_tuple[0]:boundary_tuple[1]])
@@ -31,7 +31,6 @@ def chimera_sequence_creation(section_being_spliced_in, marked_sequence, mark_in
 def fasta_creation(file_name, sequence, subunits):
     """Creates a fasta file with the given file_name, and replicates the sequence within it the specified number of times
     to create a homo multimer if subunits is greater than 1."""
-    file = open(file_name, 'w')
-    for x in range(subunits):
-        file.write('>{0}\n{1}\n'.format(Path(file_name).stem, sequence))
-    file.close()
+    with open(file_name, 'w') as outfile:
+        for _unused_x in range(subunits):
+            outfile.write('>{0}\n{1}\n'.format(Path(file_name).stem, sequence))
