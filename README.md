@@ -4,46 +4,57 @@ Code for generating and predicting coronavirus chimeras.
 This repository is described in Simpson and Kasson, "Structural prediction of chimeric immunogens to elicit targeted antibodies against betacoronaviruses".
 
 Here, we provide a set of Python functions and scripts to do the following:
-  Create arbitrary chimeras between protein sequences
-  Predict structure and pLDDT of these chimeras using AlphaFold
-  Score the resulting chimeras for stability using the AlphaFold outputs
-  Utilize the above functions to create S1/S2 chimeras between SARS-CoV-2 and a large set of betacoronaviruses
-  Computationally validate chimera predictions using molecular dynamics simulations.
+-  Create arbitrary chimeras between protein sequences
+-  Predict structure and pLDDT of these chimeras using AlphaFold
+-  Score the resulting chimeras for stability using the AlphaFold outputs
+-  Utilize the above functions to create S1/S2 chimeras between SARS-CoV-2 and a large set of betacoronaviruses
+-  Computationally validate chimera predictions using molecular dynamics simulations.
 
-Functionality of specific python files is summarized below:
+## Functionality of specific python files is summarized below:
 
 ProductionScript.py creates chimeras between a reference sequence and a user-supplied list of sequences.
 
 MultimerAlphaFold.sh is a shell script to run AlphaFold
 
-ChimeraAnalysis.py parses AlphaFold outputs to create creates pLDDT files for all native and chimeric protein sequences.
+ChimeraAnalysis.py parses AlphaFold outputs to create creates pLDDT files and ultimately stability scores.
 
-md_sims/setup.py will set up molecular dynamics simulations using Gromacs.  This requires Gromacs as well as the CHARMM36 forcefield package.
+md_sims/setup.py will set up molecular dynamics simulations using Gromacs.  This requires [Gromacs] (https://gitlab.com/gromacs/gromacs) as well as the [CHARMM36] (http://mackerell.umaryland.edu/charmm_ff.shtml#gromacs) forcefield package.
 As currently formulated, setup.py will take all PDB files in the current directory beginning with "3mer" and prepare production Gromacs run input files (parsing, energy minimization, and equilibration).
 
-The following files contain utility routines
-AccessiontoAlignment.py contains functions necesary for: creating fasta files for the sequences attached to the accession numbers you've collected, creating a concattnated fasta file for multiple sequence alignment, and also using that msa to find homologous sequences useful for splicing.
+## The following files contain utility routines
+
+AccessiontoAlignment.py contains functions necesary for:
+- creating fasta files for the sequences attached to the accession numbers you've collected,
+- creating a concatenated fasta file for multiple sequence alignment (MSA),
+- using that MSA to find homologous sequences useful for splicing.
 
 ChimeraGenerator.py contains functions that splice and then recombine sequence segments of your choice 
 
 Analysis.py contains routines for analysis of AlphaFold outputs
 
-More detailed information:
+## More detailed information:
 ProductionScript.py creates chimeras between a reference sequence (ex:SARS-CoV-2) and a user-supplied list of accession numbers and names preferred names for the corresponding sequences.
 example: python3 ProductionScript.py List_of_Coronaviruses.tsv chimera_arguments.json 6vsb_S1.fasta
-will create a set of chimeric fasta files along with the fastas for their wild-type parent proteins named as designated in chimera_arguments.json monomer_fasta/multimer_fasta/chimera_fastas argument where the * in /gpfs/gpfs0/scratch/jws6pq/BridNotebook/Fastas/3mer*.fasta will be replaced with preferred names outlined in second column of List_of_Coronaviruses.tsv. The basename of the monomer fasta files will  be how the aligned sequences are identified in the multiple sequence alignment. If you input your own msa, make sure these are identical. Alphafold will name output folders after the basename of the fasta file that was input.
+will create a set of chimeric fasta files along with the fastas for their wild-type parent proteins.  6vsb_S1.fasta is a fasta file containing the sequence in the reference protein that should be replaced by corresponding chimeric sequences.
+Naming is specified in the chimera_arguments.json settings file.  Wildcards in the json file will be replaced by the short name of each sequence
+given in the right-hand column of List_of_Coronaviruses.tsv.  This is also how the aligned sequences are identified in the multiple sequence alignment. If you input your own MSA, make sure these are identical. AlphaFold will name output folders after the basename of the input fasta file.
 
-In both argument json files, chimera_arguments.json and analysis_arguments.json, some variables are enclosed in [] and accompanied by empty "".
-Filling those "" with # will turn the creation of the associated files or commandline function off.
-Ex. "emboss_command":["","/scratch/jws6pq/EMBOSS-6.6.0/emboss/needle"] -> "emboss_command":["#","/scratch/jws6pq/EMBOSS-6.6.0/emboss/needle"]
-Including this # in the empty quotes of the "emboss_command" variable from analysis_arguments.json will prevent emboss from running
-Ex. "emboss_names": ["","/gpfs/gpfs0/scratch/jws6pq/Notebook/Emboss/*S1vsSARS2.emboss"] -> "emboss_names": ["","/gpfs/gpfs0/scratch/jws6pq/Notebook/Emboss/*S1vsSARS2.emboss"]
-this will prevent Emboss from running as well as negate emboss data or files from being included in analysis or data table output completely
-Ex. "muscle_command_for_msa": ["","module load gcc / 9.2.0 & & module load muscle / 3.8.31 & & muscle"] -> "muscle_command_for_msa": ["#","module load gcc / 9.2.0 & & module load muscle / 3.8.31 & & muscle"]
-will turn off the creation of the muscle msa file, allowing for inclusion of a personally generated msa
+In both argument json files some variables are given as lists with a leading empty string ("").
+This is designed to facilitate disabling selected commands by changing the "" to "#".
+Example:
+"emboss_command":["","/scratch/jws6pq/EMBOSS-6.6.0/emboss/needle"] -> "emboss_command":["#","/scratch/jws6pq/EMBOSS-6.6.0/emboss/needle"]
+will prevent emboss from running
 
-ChimeraAnalysis.py creates plddt files filled with the per residue confidence score arrays generated by the highest scoring prediction model from alphafold for all native and chimeric protein sequences. It uses these files and confidence scores to generate a data table in csv files with data for each chimera prediction by Alphafold. Data columns include: Preferred name of protein splice partner, Emboss sequence similarity of swapped sequences, Overall alphafold confidence score of the wild-type splice partner protein, Overall confidence score of the resulting chimera with the reference protein, and the averaged relative stability of the chimera as a percentage. These columns are customizable in that their inclusion can be turned off  but the data within the columns cannot be changed without changing source code.
+ChimeraAnalysis.py creates pLDDT files from AlphaFold outputs.  These files contain the per residue confidence score arrays generated by the highest scoring prediction model from AlphaFold for each native and chimeric protein sequences.
+The script then generates a csv data table where each row is a predicted chimera.
+Data columns include:
+- Preferred name of protein splice partner
+- Emboss sequence similarity of swapped sequences
+- Overall AlphaFold confidence score of the wild-type splice partner protein
+- Overall confidence score of the resulting chimera with the reference protein
+- Averaged relative stability of the chimera as a percentage.
+Each of these columns can be turned off if desired.
 
-ChimeraAnalysis.py has similar inputs on the commandline as the ProductionScript.py. Ex. python3 ChimeraAnalysis.py List_of_Coronaviruses.tsv analysis_arguments.json 6vsb_S1.fasta, the same list of accession numbers and protein names, a new arguments json file, and the fasta containing the sequence you wish to splice out and replace in your reference protein. It is also similarly customizable, as mentioned above data columsn can be turned switched off by placing a # in the empty quotes in front of their name, as well as changing the column names themselves.
-Ex. "analysis_column_names": [["","Protein"],["","Sequence Similarity (%)"],["#","Overall Native Score"],["","Overall Chimera Score"],["","Relative Stability"]] -> "analysis_column_names": [["","Protein"],["","Sequence Similarity (%)"],["#","Overall Native Score"],["#","Overall Chimera Score"],["","Relative Stability"]] will exclude Overall Native Score and Overall Chimera Score columns from the data table output.
-
+ChimeraAnalysis.py has similar inputs on the commandline as the ProductionScript.py.
+Ex. python3 ChimeraAnalysis.py List_of_Coronaviruses.tsv analysis_arguments.json 6vsb_S1.fasta
+Similar syntax applies, and the 6vsb_S1.fasta again contains the sequence in the reference protein that should be replaced by chimeric sequences.
