@@ -1,7 +1,7 @@
 # coronavirus-chimera-prediction
 Code for generating and predicting coronavirus chimeras.
 
-This repository is described in Simpson and Kasson, "Structural prediction of chimeric immunogens to elicit targeted antibodies against betacoronaviruses".
+This repository is described in Simpson and Kasson, "Structural prediction of chimeric immunogens to elicit targeted antibodies against betacoronaviruses", doi:10.1101/2023.01.31.526494.
 
 Here, we provide a set of Python functions and scripts to do the following:
 -  Create arbitrary chimeras between protein sequences
